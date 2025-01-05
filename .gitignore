@@ -1,6 +1,10 @@
 
 .idea/*
 
+experiments/*
+*/experiments/*
+*/*/experiments/*
+
 __pycache__/*
 
 catboost_info/*
