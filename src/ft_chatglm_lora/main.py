@@ -211,6 +211,7 @@ def main():
     max_target_length = data_args.max_target_length
 
     def preprocess_function_eval(examples):
+        import pdb; pdb.set_trace()
         # 存储输入和目标的列表
         inputs, targets = [], []
         # 遍历示例中的 prompt 列
@@ -257,6 +258,9 @@ def main():
         return model_inputs
 
     def preprocess_function_train(examples):
+        # 将 examples[prompt_column] 和 examples[response_column] 作为 query 和 answer 转换为 id
+        # examples 的数据类型：<class 'datasets.formatting.formatting.LazyBatch'>
+        import pdb; pdb.set_trace()
         # 计算最大序列长度，为源和目标的最大长度之和
         max_seq_length = data_args.max_source_length + data_args.max_target_length
         # 存储输入 id 和标签的字典
@@ -291,9 +295,9 @@ def main():
                 # 如果答案长度超过最大目标长度，截断
                 if len(b_ids) > data_args.max_target_length - 2:
                     b_ids = b_ids[: data_args.max_target_length - 2]
-                # 构建包含特殊标记的输入 id
+                # 构建包含特殊标记的输入 id，[CLS]和[SEP]
                 input_ids = tokenizer.build_inputs_with_special_tokens(a_ids, b_ids)
-                # 找到上下文的长度，即开始标记的位置
+                # 找到上下文的长度，即推理开始标记的位置，130004
                 context_length = input_ids.index(tokenizer.bos_token_id)
                 # 找到掩码的位置
                 mask_position = context_length - 1
@@ -309,7 +313,7 @@ def main():
                 # print("labels: ", len(labels))
                 # 如果忽略填充标记的损失
                 if data_args.ignore_pad_token_for_loss:
-                    # 将填充标记的 id 替换为 -100
+                    # 将填充标记的 id 替换为 -100，这里对应到 compute_metrics 中 labels 去除 pad token
                     labels = [(l if l != tokenizer.pad_token_id else -100) for l in labels]
                 # 将处理好的输入 id 添加到输入列表
                 model_inputs["input_ids"].append(input_ids)
@@ -334,7 +338,7 @@ def main():
         if data_args.max_train_samples is not None:
             max_train_samples = min(len(train_dataset), data_args.max_train_samples)
             train_dataset = train_dataset.select(range(max_train_samples))
-        # 确保在主进程中首先执行数据集的映射预处理操作
+        # 确保在主进程中首先执行数据集的映射预处理操作，将文本转换为 token ids
         with training_args.main_process_first(desc="train dataset map pre-processing"):
             # 使用 map 函数对训练数据集进行预处理，调用 preprocess_function_train 函数
             train_dataset = train_dataset.map(
