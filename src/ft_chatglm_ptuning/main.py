@@ -144,15 +144,23 @@ def main():
         #     config=config,
         #     trust_remote_code=True
         # )
+        # 从预训练的模型中加载 ChatGLMForConditionalGeneration 模型
         model = ChatGLMForConditionalGeneration.from_pretrained(
             model_args.model_name_or_path,
             config=config,
         )
+        # 加载预训练的检查点文件，该文件存储了模型的参数
         prefix_state_dict = torch.load(os.path.join(model_args.ptuning_checkpoint, "pytorch_model.bin"))
+        # 创建一个空的字典 new_prefix_state_dict，用于存储处理后的状态字典
         new_prefix_state_dict = {}
+        # 遍历 prefix_state_dict 中的每个键值对
         for k, v in prefix_state_dict.items():
+            # 检查键是否以 "transformer.prefix_encoder." 开头
             if k.startswith("transformer.prefix_encoder."):
+                # 如果键以 "transformer.prefix_encoder." 开头
+                # 将其去掉前缀并存储在 new_prefix_state_dict 中
                 new_prefix_state_dict[k[len("transformer.prefix_encoder."):]] = v
+        # 将处理后的状态字典加载到模型的 transformer.prefix_encoder 部分的状态字典中
         model.transformer.prefix_encoder.load_state_dict(new_prefix_state_dict)
     else:
         # model = AutoModel.from_pretrained(
